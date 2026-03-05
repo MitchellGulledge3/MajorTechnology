@@ -1,0 +1,59 @@
+{
+    "type": "Microsoft.SecurityInsights/dataConnectors",
+    "apiVersion": "2022-10-01-preview",
+    "name": "MajorBuildInvocationsPoller",
+    "kind": "RestApiPoller",
+    "properties": {
+        "connectorDefinitionName": "MajorBuildInvocations",
+        "dataType": "MajorBuildInvocations_CL",
+        "dcrConfig": {
+            "dataCollectionEndpoint": "[[parameters('dcrConfig').dataCollectionEndpoint]",
+            "dataCollectionRuleImmutableId": "[[parameters('dcrConfig').dataCollectionRuleImmutableId]",
+            "streamName": "Custom-MajorBuildInvocations_CL"
+        },
+        "auth": {
+            "type": "APIKey",
+            "apiKey": "[[parameters('apiKey')]",
+            "apiKeyName": "Authorization",
+            "apiKeyIdentifier": "Bearer"
+        },
+        "request": {
+            "apiEndpoint": "https://api.prod.major.build/api/public/invocations",
+            "httpMethod": "GET",
+            "queryParameters": {
+                "limit": 1000
+            },
+            "startTimeAttributeName": "startTime",
+            "endTimeAttributeName": "endTime",
+            "startTimeFormat": "yyyy-MM-ddTHH:mm:ssZ",
+            "endTimeFormat": "yyyy-MM-ddTHH:mm:ssZ",
+            "queryWindowInMin": 5,
+            "rateLimitQPS": 10,
+            "retryCount": 3,
+            "timeoutInSeconds": 60,
+            "headers": {
+                "Accept": "application/json"
+            }
+        },
+        "paging": {
+            "pagingType": "None"
+        },
+        "response": {
+            "eventsJsonPaths": [
+                "$.invocations"
+            ],
+            "eventSchemaMapping": {
+                "InvocationId": "invocationId",
+                "TimeGenerated": "time",
+                "ResourceName": "resourceName",
+                "ApplicationName": "applicationName",
+                "ResourceType": "resourceType",
+                "Environment": "environment",
+                "UserName": "userName",
+                "UserEmail": "userEmail",
+                "Status": "status",
+                "Payload": "payload"
+            }
+        }
+    }
+}
