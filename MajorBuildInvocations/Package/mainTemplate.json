@@ -1,0 +1,221 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "workspace": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the Log Analytics workspace."
+            }
+        },
+        "workspace-location": {
+            "type": "string",
+            "metadata": {
+                "description": "The Azure region of the Log Analytics workspace."
+            }
+        },
+        "apiKey": {
+            "type": "securestring",
+            "minLength": 1,
+            "metadata": {
+                "description": "Your Major Build API key. Generate one at app.major.build under Settings → API Keys."
+            }
+        },
+        "dcrConfig": {
+            "type": "object",
+            "defaultValue": {
+                "dataCollectionEndpoint": "",
+                "dataCollectionRuleImmutableId": ""
+            },
+            "metadata": {
+                "description": "Data Collection Rule configuration (endpoint + immutable ID). Created automatically by Microsoft Sentinel."
+            }
+        },
+        "guidValue": {
+            "type": "string",
+            "defaultValue": "[newGuid()]",
+            "metadata": {
+                "description": "Unique GUID used for resource naming."
+            }
+        }
+    },
+    "variables": {
+        "workspaceResourceId": "[resourceId('microsoft.OperationalInsights/Workspaces', parameters('workspace'))]",
+        "connectorDefinitionName": "MajorBuildInvocations",
+        "_connectorDefinitionName": "[variables('connectorDefinitionName')]",
+        "connectorVersion": "1.0.0",
+        "_solutionId": "majortechnology.majorbuild-invocations-sentinel",
+        "solutionVersion": "1.0.0",
+        "_solutionName": "Major Build AI Invocations"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/providers/dataConnectorDefinitions",
+            "apiVersion": "2022-09-01-preview",
+            "name": "[concat(parameters('workspace'),'/Microsoft.SecurityInsights/', variables('connectorDefinitionName'))]",
+            "location": "[parameters('workspace-location')]",
+            "kind": "Customizable",
+            "properties": {
+                "connectorUiConfig": {
+                    "id": "MajorBuildInvocations",
+                    "title": "Major Build AI Invocations",
+                    "publisher": "Major Technology",
+                    "descriptionMarkdown": "The [Major Build](https://www.major.build) connector ingests AI agent invocation records from the Major Build platform into Microsoft Sentinel. Each record captures who ran an AI agent, which application and resource integration was used, what data was accessed (including raw SQL queries), and whether the invocation succeeded.",
+                    "graphQueriesTableName": "MajorBuildInvocations_CL",
+                    "graphQueries": [
+                        {
+                            "metricName": "Total invocations received",
+                            "legend": "MajorBuildInvocations_CL",
+                            "baseQuery": "MajorBuildInvocations_CL"
+                        }
+                    ],
+                    "sampleQueries": [
+                        {
+                            "description": "All invocations in the last 24 hours",
+                            "query": "MajorBuildInvocations_CL\n | where TimeGenerated >= ago(24h)\n | sort by TimeGenerated desc"
+                        },
+                        {
+                            "description": "Invocation activity by user",
+                            "query": "MajorBuildInvocations_CL\n | summarize InvocationCount = count() by UserName_s, bin(TimeGenerated, 1h)\n | sort by InvocationCount desc"
+                        },
+                        {
+                            "description": "All SQL queries executed by AI agents",
+                            "query": "MajorBuildInvocations_CL\n | where ResourceType_s == \"postgresql\"\n | extend SqlQuery = tostring(parse_json(Payload_s).sql)\n | where isnotempty(SqlQuery)\n | summarize count() by SqlQuery\n | sort by count_ desc"
+                        },
+                        {
+                            "description": "Failed invocations",
+                            "query": "MajorBuildInvocations_CL\n | where Status_s != \"success\"\n | sort by TimeGenerated desc"
+                        },
+                        {
+                            "description": "First-time resource type access per user (last 7 days)",
+                            "query": "MajorBuildInvocations_CL\n | summarize FirstSeen = min(TimeGenerated) by UserName_s, ResourceType_s\n | where FirstSeen >= ago(7d)\n | sort by FirstSeen desc"
+                        }
+                    ],
+                    "dataTypes": [
+                        {
+                            "name": "MajorBuildInvocations_CL",
+                            "lastDataReceivedQuery": "MajorBuildInvocations_CL\n | summarize Time = max(TimeGenerated)\n | where isnotempty(Time)"
+                        }
+                    ],
+                    "connectivityCriteria": [
+                        {
+                            "type": "HasDataConnectors"
+                        }
+                    ],
+                    "availability": {
+                        "isPreview": false
+                    },
+                    "permissions": {
+                        "resourceProvider": [
+                            {
+                                "provider": "Microsoft.OperationalInsights/workspaces",
+                                "permissionsDisplayText": "Read and Write permissions on the Log Analytics workspace are required.",
+                                "providerDisplayName": "Workspace",
+                                "scope": "Workspace",
+                                "requiredPermissions": {
+                                    "read": true,
+                                    "write": true,
+                                    "delete": true,
+                                    "action": false
+                                }
+                            }
+                        ],
+                        "customs": [
+                            {
+                                "name": "Major Build API Key",
+                                "description": "A Major Build API key is required. Generate one at https://app.major.build under Settings → API Keys."
+                            }
+                        ]
+                    },
+                    "instructionSteps": [
+                        {
+                            "title": "Connect Major Build AI Invocations to Microsoft Sentinel",
+                            "description": "To enable the connector, provide your Major Build API key below. The connector will poll the Major Build Invocations API every 5 minutes and ingest records into the **MajorBuildInvocations_CL** table.\n\n> **Note:** You can generate or rotate your API key at [app.major.build](https://app.major.build) under **Settings → API Keys**.",
+                            "instructions": [
+                                {
+                                    "type": "Textbox",
+                                    "parameters": {
+                                        "label": "Major Build API Key",
+                                        "placeholder": "MJR_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                                        "type": "password",
+                                        "name": "apiKey"
+                                    }
+                                },
+                                {
+                                    "type": "ConnectionToggleButton",
+                                    "parameters": {
+                                        "connectLabel": "Connect",
+                                        "name": "toggle"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/providers/dataConnectors",
+            "apiVersion": "2022-10-01-preview",
+            "name": "[concat(parameters('workspace'),'/Microsoft.SecurityInsights/',concat('MajorBuildInvocationsPoller-', parameters('guidValue')))]",
+            "location": "[parameters('workspace-location')]",
+            "kind": "RestApiPoller",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces/providers/dataConnectorDefinitions', parameters('workspace'), 'Microsoft.SecurityInsights', variables('connectorDefinitionName'))]"
+            ],
+            "properties": {
+                "connectorDefinitionName": "MajorBuildInvocations",
+                "dataType": "MajorBuildInvocations_CL",
+                "dcrConfig": {
+                    "dataCollectionEndpoint": "[parameters('dcrConfig').dataCollectionEndpoint]",
+                    "dataCollectionRuleImmutableId": "[parameters('dcrConfig').dataCollectionRuleImmutableId]",
+                    "streamName": "Custom-MajorBuildInvocations_CL"
+                },
+                "auth": {
+                    "type": "APIKey",
+                    "apiKey": "[parameters('apiKey')]",
+                    "apiKeyName": "Authorization",
+                    "apiKeyIdentifier": "Bearer"
+                },
+                "request": {
+                    "apiEndpoint": "https://api.prod.major.build/api/public/invocations",
+                    "httpMethod": "GET",
+                    "queryParameters": {
+                        "limit": 1000
+                    },
+                    "startTimeAttributeName": "startTime",
+                    "endTimeAttributeName": "endTime",
+                    "startTimeFormat": "yyyy-MM-ddTHH:mm:ssZ",
+                    "endTimeFormat": "yyyy-MM-ddTHH:mm:ssZ",
+                    "queryWindowInMin": 5,
+                    "rateLimitQPS": 10,
+                    "retryCount": 3,
+                    "timeoutInSeconds": 60,
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                },
+                "paging": {
+                    "pagingType": "None"
+                },
+                "response": {
+                    "eventsJsonPaths": [
+                        "$.invocations"
+                    ],
+                    "eventSchemaMapping": {
+                        "InvocationId": "invocationId",
+                        "TimeGenerated": "time",
+                        "ResourceName": "resourceName",
+                        "ApplicationName": "applicationName",
+                        "ResourceType": "resourceType",
+                        "Environment": "environment",
+                        "UserName": "userName",
+                        "UserEmail": "userEmail",
+                        "Status": "status",
+                        "Payload": "payload"
+                    }
+                }
+            }
+        }
+    ]
+}
