@@ -8,6 +8,9 @@
         "workspace-location": {
             "value": "eastus"
         },
+        "accountName": {
+            "value": "production"
+        },
         "apiKey": {
             "value": "MJR_yourapikeyhere"
         },

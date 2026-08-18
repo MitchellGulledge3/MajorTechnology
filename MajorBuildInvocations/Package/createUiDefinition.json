@@ -6,7 +6,7 @@
         "config": {
             "isWizard": false,
             "basics": {
-                "description": "<img src=\"https://www.major.build/favicon.ico\" width=\"75px\" height=\"75px\">\n\n**Note:** Please refer to the following before deploying this solution:\n\n- The connector requires a Major Build API key. Generate one at [app.major.build](https://app.major.build) under **Settings → API Keys**.\n\n- Review the solution [Release Notes](https://github.com/MitchellGulledge3/MajorTechnology/blob/main/MajorBuildInvocations/ReleaseNotes.md).\n\n**Data Connectors:** 1, **Workbooks:** 0, **Analytic Rules:** 0\n\n[Learn more about Microsoft Sentinel](https://aka.ms/azuresentinel) | [Learn more about Solutions](https://aka.ms/azuresentinelsolutionsdoc)",
+                "description": "<img src=\"https://www.major.build/favicon.ico\" width=\"75px\" height=\"75px\">\n\n**Note:** Please refer to the following before deploying this solution:\n\n- This solution installs the connector UI, table, and shared ingestion resources. Add each Major.build account after install from the connector page.\n\n- Generate an API key per account at [app.major.build](https://app.major.build) under **Settings \u2192 API Keys**.\n\n- Review [Support multiple connections in a codeless connector](https://learn.microsoft.com/azure/sentinel/isv/multi-account-ccf-connector).\n\n- Review the solution [Release Notes](https://github.com/MitchellGulledge3/MajorTechnology/blob/main/MajorBuildInvocations/ReleaseNotes.md).\n\n**Data Connectors:** 1, **Workbooks:** 0, **Analytic Rules:** 0\n\n[Learn more about Microsoft Sentinel](https://aka.ms/azuresentinel) | [Learn more about Solutions](https://aka.ms/azuresentinelsolutionsdoc)",
                 "subscription": {
                     "resourceProviders": [
                         "Microsoft.OperationsManagement/solutions",
@@ -62,7 +62,7 @@
                         "name": "dataconnectors1-text",
                         "type": "Microsoft.Common.TextBlock",
                         "options": {
-                            "text": "This solution installs the Major Build AI Invocations data connector. The connector polls the Major Build API every 5 minutes and ingests AI agent invocation records into the MajorBuildInvocations_CL table in Microsoft Sentinel."
+                            "text": "This solution installs the Major.build Invocations connector definition and shared ingestion resources. After deployment, open the connector and select Add connection for each Major.build account. Each account is ingested into MajorBuildInvocations_CL and labeled with accountName."
                         }
                     },
                     {
@@ -71,7 +71,7 @@
                         "options": {
                             "link": {
                                 "label": "Learn more",
-                                "uri": "https://learn.microsoft.com/azure/sentinel/create-codeless-connector"
+                                "uri": "https://learn.microsoft.com/azure/sentinel/isv/multi-account-ccf-connector"
                             }
                         }
                     }

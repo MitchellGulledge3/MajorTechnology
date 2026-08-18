@@ -1,7 +1,7 @@
 {
     "type": "Microsoft.SecurityInsights/dataConnectors",
-    "apiVersion": "2021-10-01-preview",
-    "name": "MajorBuildInvocationsPoller",
+    "apiVersion": "2024-09-01",
+    "name": "[[concat('MajorBuildInvocations', uniqueString(parameters('accountName')))]",
     "location": "{{location}}",
     "kind": "RestApiPoller",
     "properties": {
@@ -38,6 +38,9 @@
             "streamName": "Custom-MajorBuildInvocations_CL",
             "dataCollectionEndpoint": "{{dataCollectionEndpoint}}",
             "dataCollectionRuleImmutableId": "{{dataCollectionRuleImmutableId}}"
+        },
+        "addOnAttributes": {
+            "accountName": "[[parameters('accountName')]"
         }
     }
 }

@@ -1,6 +1,6 @@
 {
     "name": "MajorBuildInvocationsDefinition",
-    "apiVersion": "2022-09-01-preview",
+    "apiVersion": "2025-07-01-preview",
     "type": "Microsoft.SecurityInsights/dataConnectorDefinitions",
     "location": "{{location}}",
     "kind": "Customizable",
@@ -9,52 +9,56 @@
             "id": "MajorBuildInvocationsDefinition",
             "title": "Major.build Invocations",
             "publisher": "Major Technology",
-            "descriptionMarkdown": "The **[Major.build](https://major.build) Invocations** connector ingests AI agent invocation logs from the Major.build platform into Microsoft Sentinel. Each record captures which user triggered an invocation, which application and resource integration was used, and the full request payload — including API paths called or SQL queries executed by AI agents.\n\nUse this data to monitor user activity, detect anomalous AI-driven API patterns, audit database queries executed by agents, and correlate automation activity with your broader security posture.",
+            "descriptionMarkdown": "The **[Major.build](https://major.build) Invocations** connector ingests AI agent invocation logs from the Major.build platform into Microsoft Sentinel. Each record captures which user triggered an invocation, which application and resource integration was used, and the full request payload \u2014 including API paths called or SQL queries executed by AI agents.\n\nThe connector supports multiple Major.build accounts in one workspace. Each connection is added independently, labeled by account name, and listed in the connections grid. Use this data to monitor user activity, detect anomalous AI-driven API patterns, audit database queries executed by agents, and correlate automation activity with your broader security posture.",
             "graphQueriesTableName": "MajorBuildInvocations_CL",
             "graphQueries": [
                 {
                     "metricName": "Total invocations received",
                     "legend": "Major.build Invocations",
-                    "baseQuery": "MajorBuildInvocations_CL"
+                    "baseQuery": "{{graphQueriesTableName}}"
                 }
             ],
             "sampleQueries": [
                 {
-                    "description": "All invocations — most recent first",
-                    "query": "MajorBuildInvocations_CL\n| sort by TimeGenerated desc"
+                    "description": "All invocations \u2014 most recent first",
+                    "query": "{{graphQueriesTableName}}\n| sort by TimeGenerated desc"
+                },
+                {
+                    "description": "Invocations by Major.build account (last 7 days)",
+                    "query": "{{graphQueriesTableName}}\n| where TimeGenerated > ago(7d)\n| summarize InvocationCount = count() by accountName\n| sort by InvocationCount desc"
                 },
                 {
                     "description": "Invocations by user (last 7 days)",
-                    "query": "MajorBuildInvocations_CL\n| where TimeGenerated > ago(7d)\n| summarize InvocationCount = count() by userEmail, userName\n| sort by InvocationCount desc"
+                    "query": "{{graphQueriesTableName}}\n| where TimeGenerated > ago(7d)\n| summarize InvocationCount = count() by userEmail, userName, accountName\n| sort by InvocationCount desc"
                 },
                 {
                     "description": "Failed invocations (last 24 hours)",
-                    "query": "MajorBuildInvocations_CL\n| where TimeGenerated > ago(24h) and status != 'success'\n| project TimeGenerated, userEmail, applicationName, resourceName, resourceType, status, payloadType, payload.path"
+                    "query": "{{graphQueriesTableName}}\n| where TimeGenerated > ago(24h) and status != 'success'\n| project TimeGenerated, accountName, userEmail, applicationName, resourceName, resourceType, status, payloadType, payload.path"
                 },
                 {
                     "description": "Database queries executed by AI agents",
-                    "query": "MajorBuildInvocations_CL\n| where TimeGenerated > ago(24h) and payloadType == 'database'\n| project TimeGenerated, userEmail, applicationName, resourceName, payload['sql']\n| sort by TimeGenerated desc"
+                    "query": "{{graphQueriesTableName}}\n| where TimeGenerated > ago(24h) and payloadType == 'database'\n| project TimeGenerated, accountName, userEmail, applicationName, resourceName, payload['sql']\n| sort by TimeGenerated desc"
                 },
                 {
                     "description": "Top API paths called by AI agents",
-                    "query": "MajorBuildInvocations_CL\n| where TimeGenerated > ago(7d) and payloadType == 'api'\n| summarize Count = count() by tostring(payload.method), tostring(payload.path)\n| sort by Count desc"
+                    "query": "{{graphQueriesTableName}}\n| where TimeGenerated > ago(7d) and payloadType == 'api'\n| summarize Count = count() by accountName, tostring(payload.method), tostring(payload.path)\n| sort by Count desc"
                 }
             ],
             "dataTypes": [
                 {
-                    "name": "MajorBuildInvocations_CL",
-                    "lastDataReceivedQuery": "MajorBuildInvocations_CL\n| where TimeGenerated > ago(12h)\n| summarize Time = max(TimeGenerated)\n| where isnotempty(Time)"
+                    "name": "{{graphQueriesTableName}}",
+                    "lastDataReceivedQuery": "{{graphQueriesTableName}}\n| where TimeGenerated > ago(12h)\n| summarize Time = max(TimeGenerated)\n| where isnotempty(Time)"
                 }
             ],
             "connectivityCriteria": [
                 {
                     "type": "HasDataConnectors",
-                    "value": null
+                    "value": []
                 }
             ],
             "availability": {
                 "status": 1,
-                "isPreview": false
+                "isPreview": true
             },
             "permissions": {
                 "resourceProvider": [
@@ -73,40 +77,88 @@
                 ],
                 "customs": [
                     {
-                        "name": "Major.build API Bearer Token",
-                        "description": "A valid API Bearer token from your Major.build account is required. Tokens begin with **MJR_** and can be generated from the Major.build platform settings."
+                        "name": "Major.build API key",
+                        "description": "A valid API key from each Major.build account is required. Keys begin with **MJR_** and can be generated from Major.build platform settings. Connect one key per account."
                     }
                 ]
             },
             "instructionSteps": [
                 {
+                    "title": "Prerequisites",
+                    "description": "",
                     "instructions": [
                         {
                             "type": "Markdown",
                             "parameters": {
-                                "content": "#### Steps to configure the Major.build Invocations Connector\n\n**Prerequisites**\n- A valid Major.build account with API access enabled\n\n**Step 1: Obtain your API Bearer Token**\n1. Log in to the **[Major.build platform](https://major.build)**\n2. Navigate to **Settings → API Keys**\n3. Generate a new API token or copy an existing one\n4. The token will begin with **`MJR_`** — copy the full value\n\n> **Note:** Keep your token secure. Anyone with this token can query your organization's invocation history, including SQL queries and API paths executed by AI agents.\n\n**Step 2: Enter your credentials below**"
+                                "content": "#### Prerequisites\n\n- One or more Major.build accounts with API access enabled\n- An API key for each account you want to connect. Keys begin with `MJR_`.\n\n#### Get an API key\n\n1. Sign in to the **[Major.build platform](https://major.build)**\n2. Go to **Settings \u2192 API Keys**\n3. Generate a new key or copy an existing one\n4. Copy the full value (it starts with `MJR_`)\n\n> Keep each key secure. Anyone with a key can query that account's invocation history, including SQL text and API paths executed by AI agents.\n\nAfter the solution is installed, use **Add connection** to connect each Major.build account. Connecting a second account does not overwrite the first."
+                            }
+                        }
+                    ]
+                },
+                {
+                    "title": "Major.build connections",
+                    "description": "Add and manage connections to your Major.build accounts. You can connect multiple accounts at the same time.",
+                    "instructions": [
+                        {
+                            "type": "DataConnectorsGrid",
+                            "parameters": {
+                                "mapping": [
+                                    {
+                                        "columnName": "Account name",
+                                        "columnValue": "properties.addOnAttributes.accountName"
+                                    },
+                                    {
+                                        "columnName": "Data type",
+                                        "columnValue": "properties.dataType"
+                                    }
+                                ],
+                                "menuItems": [
+                                    "DeleteConnector"
+                                ]
                             }
                         },
                         {
-                            "type": "Textbox",
+                            "type": "ContextPane",
                             "parameters": {
-                                "label": "Major.build API Bearer Token",
-                                "placeholder": "MJR_...",
-                                "type": "password",
-                                "name": "apiKey"
-                            }
-                        },
-                        {
-                            "type": "ConnectionToggleButton",
-                            "parameters": {
-                                "label": "toggle",
-                                "name": "toggle"
+                                "label": "Add connection",
+                                "title": "Add Major.build connection",
+                                "subtitle": "Connect a Major.build account to Microsoft Sentinel",
+                                "contextPaneType": "DataConnectorsContextPane",
+                                "instructionSteps": [
+                                    {
+                                        "instructions": [
+                                            {
+                                                "type": "Textbox",
+                                                "parameters": {
+                                                    "label": "Account name",
+                                                    "placeholder": "e.g. production, staging, or customer-a",
+                                                    "type": "text",
+                                                    "name": "accountName",
+                                                    "validations": {
+                                                        "required": true
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "type": "Textbox",
+                                                "parameters": {
+                                                    "label": "Major.build API key",
+                                                    "placeholder": "MJR_...",
+                                                    "type": "password",
+                                                    "name": "apiKey",
+                                                    "validations": {
+                                                        "required": true
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
                             }
                         }
                     ]
                 }
-            ],
-            "isConnectivityCriteriasMatchSome": false
+            ]
         }
     }
 }

@@ -2,9 +2,9 @@
     "Name": "MajorBuildInvocations",
     "Author": "Major Technology",
     "Logo": "<img src=\"https://www.major.build/favicon.ico\" width=\"75px\" height=\"75px\">",
-    "Description": "The **Major Build AI Invocations** solution for Microsoft Sentinel provides a CCF-based data connector that automatically ingests AI agent invocation records from the [Major Build](https://www.major.build) platform.\n\nEach record captures:\n- **Who** ran the AI agent (user name, email)\n- **What** application and resource integration was used\n- **What data** was accessed (including full SQL query text)\n- **Whether** the invocation succeeded or failed\n- **When** the invocation occurred and from which environment\n\nThis enables security teams to audit AI agent activity, detect anomalous access patterns, and investigate data exposure via AI agents.\n\n**Data Connectors:** 1\n\n**Table:** MajorBuildInvocations_CL\n\n**Poll Interval:** Every 5 minutes",
+    "Description": "The **Major Build AI Invocations** solution for Microsoft Sentinel provides a CCF-based data connector that ingests AI agent invocation records from the [Major Build](https://www.major.build) platform.\n\nThis version uses the multi-account CCF pattern so you can connect multiple Major.build accounts in one workspace. Each connection is added from the connector page and listed independently.\n\nEach record captures:\n- **Which account** sent the data (`accountName`)\n- **Who** ran the AI agent (user name, email)\n- **What** application and resource integration was used\n- **What data** was accessed (including full SQL query text)\n- **Whether** the invocation succeeded or failed\n- **When** the invocation occurred and from which environment\n\nThis enables security teams to audit AI agent activity, detect anomalous access patterns, and investigate data exposure via AI agents.\n\n**Data Connectors:** 1\n\n**Table:** MajorBuildInvocations_CL\n\n**Poll Interval:** Every 60 minutes",
     "BasePath": "https://raw.githubusercontent.com/MitchellGulledge3/MajorTechnology/main/MajorBuildInvocations",
-    "Version": "1.0.0",
+    "Version": "1.1.0",
     "Metadata": "SolutionMetadata.json",
     "TemplateSpec": true,
     "Is1PConnector": false,
@@ -27,10 +27,10 @@
         "link": "https://www.major.build"
     },
     "Data Connectors": [
-        "Data Connectors/MajorBuildInvocations_ConnectorDefinition.json"
+        "Data Connectors/MajorBuildInvocations_CCP/MajorBuildInvocations_Definition.json"
     ],
     "CCP": [
-        "Data Connectors/MajorBuildInvocations_ConnectorDefinition.json",
-        "Data Connectors/MajorBuildInvocations_PollingConfig.json"
+        "Data Connectors/MajorBuildInvocations_CCP/MajorBuildInvocations_Definition.json",
+        "Data Connectors/MajorBuildInvocations_CCP/MajorBuildInvocations_PollingConfig.json"
     ]
 }
